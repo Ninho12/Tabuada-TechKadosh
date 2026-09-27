@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Tabuada TechKadosh</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind Configuration para cores personalizadas e fontes -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Vue.js 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <style>
+    /* Suporte a safe area em dispositivos móveis modernos (Capacitor/iOS/Android) */
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    /* Animação suave para cards e feedback */
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .fade-enter-from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    .fade-leave-to {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+  <div id="app" class="w-full max-w-md min-h-screen flex flex-col justify-between p-4 sm:p-6 relative">
+    
+    <!-- TOAST DE NOTIFICAÇÃO (PIX COPIADO) -->
+    <transition name="fade">
+      <div 
+        v-if="toast.visible" 
+        class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-semibold border border-emerald-400">
+        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span>{{ toast.message }}</span>
+      </div>
+    </transition>
+
+    <!-- ========================================== -->
+    <!-- 1. TELA INICIAL (MENU)                     -->
+    <!-- ========================================== -->
+    <main v-if="currentScreen === 'menu'" class="flex-1 flex flex-col justify-between py-2">
+      <!-- Cabeçalho -->
+      <div class="text-center pt-2 pb-4">
+        <div class="inline-flex p-3 bg-indigo-600/20 rounded-3xl border border-indigo-500/30 mb-3 shadow-inner">
+          <svg class="w-10 h-10 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10H9m3-10v10M9 3h6a2 2 0 012 2v14a2 2 0 01-2 2H9a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
+          Tabuada TechKadosh
+        </h1>
+        <p class="text-slate-400 text-sm mt-1">Treine sua mente e domine a matemática!</p>
+      </div>
+
+      <!-- Configurações do Jogo -->
+      <div class="space-y-5 my-auto">
+        <!-- Seleção de Operação -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            1. Escolha a Operação
+          </label>
+          <div class="grid grid-cols-5 gap-2">
+            <button 
+              v-for="op in operations" 
+              :key="op.id"
+              @click="selectOp(op.id)"
+              :class="[
+                'flex flex-col items-center justify-center p-3 rounded-2xl border transition-all duration-150 active:scale-95 shadow-sm',
+                selectedOperation === op.id 
+                  ? 'bg-indigo-600 border-indigo-400 text-white shadow-indigo-500/40 shadow-md ring-2 ring-indigo-300' 
+                  : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-800'
+              ]">
+              <span class="text-xl font-black mb-0.5">{{ op.symbol }}</span>
+              <span class="text-[10px] font-medium tracking-tight">{{ op.name }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Seleção de Dificuldade / Quantidade -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            2. Escolha o Desafio (Questões)
+          </label>
+          <div class="grid grid-cols-3 gap-2.5">
+            <button 
+              v-for="diff in difficulties" 
+              :key="diff.questions"
+              @click="selectDiff(diff.questions)"
+              :class="[
+                'p-3.5 rounded-2xl border text-center transition-all duration-150 active:scale-95 shadow-sm',
+                selectedDifficulty === diff.questions 
+                  ? 'bg-indigo-600 border-indigo-400 text-white shadow-indigo-500/30 shadow-md ring-2 ring-indigo-300' 
+                  : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-800'
+              ]">
+              <div class="text-sm font-bold">{{ diff.label }}</div>
+              <div class="text-xs opacity-75 mt-0.5 font-medium">{{ diff.questions }} questões</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Botão Iniciar -->
+        <button 
+          @click="startGame"
+          :disabled="!isReadyToStart"
+          :class="[
+            'w-full py-4 rounded-2xl font-bold text-lg tracking-wide uppercase shadow-lg transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2',
+            isReadyToStart 
+              ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-indigo-500/30 hover:opacity-95' 
+              : 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed'
+          ]">
+          <span>Iniciar Jogo</span>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Seção de Apoio / Redes Sociais e Pix -->
+      <footer class="mt-6 pt-4 border-t border-slate-800/80 space-y-3">
+        <!-- Botão Pix -->
+        <button 
+          @click="copyPixKey" 
+          class="w-full py-3 px-4 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/40 rounded-2xl flex items-center justify-between transition-all duration-150 active:scale-95 text-emerald-300 group">
+          <div class="flex items-center gap-3">
+            <div class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+            </div>
+            <div class="text-left">
+              <p class="text-xs text-emerald-400/80 font-semibold uppercase tracking-wider">Apoie este projeto</p>
+              <p class="text-sm font-bold text-emerald-200">Copiar Chave Pix</p>
+            </div>
+          </div>
+          <span class="text-xs bg-emerald-500/20 text-emerald-300 font-semibold px-2.5 py-1 rounded-lg border border-emerald-500/30">
+            Copiar
+          </span>
+        </button>
+
+        <!-- Redes Sociais / Canais -->
+        <div class="grid grid-cols-2 gap-2 text-xs font-semibold">
+          <!-- WhatsApp -->
+          <a 
+            href="https://whatsapp.com/channel/0029Va4nf3i2P59nZly64121" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 py-3 px-3 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl text-slate-300 hover:text-emerald-400 transition-colors active:scale-95">
+            <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.664-.698c.99.54 1.761.819 2.796.82h.005c3.18 0 5.768-2.587 5.768-5.766.001-3.187-2.575-5.807-5.773-6.007zm3.376 8.204c-.14.394-.814.729-1.127.776-.307.046-.7.072-2.02-.455-1.574-.63-2.593-2.228-2.671-2.332-.078-.104-.64-.852-.64-1.624 0-.771.405-1.15.549-1.306.14-.156.307-.195.41-.195.104 0 .208.002.299.006.096.005.226-.037.352.267.13.313.444 1.082.483 1.16.039.078.065.17.013.273-.052.104-.078.169-.156.26-.078.091-.164.204-.235.274-.078.078-.16.162-.069.318.091.156.406.669.871 1.083.599.533 1.104.698 1.26.776.156.078.247.065.339-.039.091-.104.39-.455.494-.611.104-.156.208-.13.348-.078.14.052.885.417 1.037.494.152.078.253.117.291.182.039.065.039.377-.101.771z"/>
+            </svg>
+            <span>TechKadosh TTM</span>
+          </a>
+
+          <!-- YouTube -->
+          <a 
+            href="https://www.youtube.com/@JoaoPauloTechKadoshTTM" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="flex items-center justify-center gap-2 py-3 px-3 bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 rounded-2xl text-slate-300 hover:text-red-400 transition-colors active:scale-95">
+            <svg class="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            <span>Canal YouTube</span>
+          </a>
+        </div>
+      </footer>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 2. TELA DE JOGO (EXERCÍCIOS)               -->
+    <!-- ========================================== -->
+    <main v-else-if="currentScreen === 'jogo'" class="flex-1 flex flex-col justify-between py-2">
+      <!-- Barra Superior de Progresso e Placar -->
+      <div>
+        <div class="flex items-center justify-between text-xs font-bold text-slate-400 mb-2">
+          <span class="bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+            Questão <strong class="text-indigo-400">{{ currentIndex + 1 }}</strong> de {{ selectedDifficulty }}
+          </span>
+
+          <div class="flex items-center gap-3">
+            <span class="flex items-center gap-1 text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2.5 py-1 rounded-xl">
+              ✓ {{ score.correct }}
+            </span>
+            <span class="flex items-center gap-1 text-rose-400 bg-rose-950/40 border border-rose-500/30 px-2.5 py-1 rounded-xl">
+              ✗ {{ score.wrong }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Barra de progresso visual -->
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700/60">
+          <div 
+            class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full transition-all duration-300 rounded-full"
+            :style="{ width: progressPercentage + '%' }">
+          </div>
+        </div>
+      </div>
+
+      <!-- Card da Questão Atual -->
+      <div class="my-auto py-6">
+        <div class="bg-gradient-to-b from-slate-800 to-slate-800/80 border border-slate-700 rounded-3xl p-8 shadow-2xl text-center relative overflow-hidden">
+          <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          
+          <span class="text-xs uppercase font-extrabold tracking-widest text-indigo-400/80 block mb-2">
+            Resolva a Operação
+          </span>
+
+          <div class="text-5xl sm:text-6xl font-black text-slate-50 tracking-wide font-mono">
+            {{ currentQuestion.text }}
+          </div>
+        </div>
+
+        <!-- Opções de Múltipla Escolha (3 alternativas) -->
+        <div class="grid grid-cols-1 gap-3.5 mt-6">
+          <button 
+            v-for="(option, idx) in currentQuestion.options" 
+            :key="idx"
+            @click="handleAnswer(option)"
+            :disabled="answered"
+            :class="[
+              'w-full py-4 px-6 rounded-2xl text-2xl font-bold font-mono transition-all duration-150 border active:scale-[0.98] shadow-md flex items-center justify-between',
+              getOptionClass(option)
+            ]">
+            <span class="text-sm font-sans font-semibold text-slate-400">Opção {{ idx + 1 }}</span>
+            <span class="text-2xl font-bold">{{ option }}</span>
+            <span class="w-6 text-right">
+              <span v-if="answered && option === currentQuestion.correctAnswer" class="text-white text-xl">✓</span>
+              <span v-else-if="answered && selectedAnswer === option && option !== currentQuestion.correctAnswer" class="text-white text-xl">✕</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botão para desistir/voltar ao menu -->
+      <div class="text-center pt-2">
+        <button 
+          @click="confirmExit" 
+          class="text-xs font-semibold text-slate-500 hover:text-slate-300 underline py-2">
+          Abandonar partida e voltar ao menu
+        </button>
+      </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 3. TELA DE RESULTADO                      -->
+    <!-- ========================================== -->
+    <main v-else-if="currentScreen === 'resultado'" class="flex-1 flex flex-col justify-between py-2 text-center">
+      <!-- Cabeçalho de Desempenho -->
+      <div class="pt-4 pb-2">
+        <div class="inline-flex p-4 rounded-3xl mb-3 shadow-inner" :class="performanceBadgeClass">
+          <svg v-if="percentage >= 70" class="w-12 h-12 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+          <svg v-else class="w-12 h-12 text-indigo-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <h2 class="text-3xl font-extrabold text-white">{{ performanceTitle }}</h2>
+        <p class="text-slate-400 text-sm mt-1">{{ performanceMessage }}</p>
+      </div>
+
+      <!-- Cards de Estatísticas -->
+      <div class="space-y-4 my-auto">
+        <!-- Aproveitamento em % -->
+        <div class="bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-500/40 rounded-3xl p-6 shadow-xl">
+          <span class="text-xs uppercase font-extrabold tracking-wider text-indigo-300">Aproveitamento</span>
+          <div class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-white to-pink-300 my-1 font-mono">
+            {{ percentage }}%
+          </div>
+          <span class="text-xs text-slate-300">{{ score.correct }} de {{ selectedDifficulty }} questões corretas</span>
+        </div>
+
+        <!-- Detalhes: Acertos e Erros -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-800/80 border border-emerald-500/30 rounded-2xl p-4">
+            <span class="text-xs text-emerald-400 font-bold uppercase tracking-wider block">Acertos</span>
+            <span class="text-3xl font-black text-emerald-300 font-mono">{{ score.correct }}</span>
+          </div>
+
+          <div class="bg-slate-800/80 border border-rose-500/30 rounded-2xl p-4">
+            <span class="text-xs text-rose-400 font-bold uppercase tracking-wider block">Erros</span>
+            <span class="text-3xl font-black text-rose-300 font-mono">{{ score.wrong }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões de Ação -->
+      <div class="space-y-3 pt-4">
+        <button 
+          @click="startGame" 
+          class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg shadow-lg shadow-indigo-500/30 hover:opacity-95 transition-all duration-150 active:scale-[0.98] flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>Jogar Novamente</span>
+        </button>
+
+        <button 
+          @click="currentScreen = 'menu'" 
+          class="w-full py-3.5 rounded-2xl bg-slate-800 border border-slate-700 text-slate-300 font-bold hover:bg-slate-750 transition-all duration-150 active:scale-[0.98]">
+          Voltar ao Menu Principal
+        </button>
+
+        <!-- Botão Pix também no resultado -->
+        <button 
+          @click="copyPixKey" 
+          class="w-full py-2.5 px-4 bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/30 rounded-2xl flex items-center justify-center gap-2 text-xs font-semibold text-emerald-300 transition-all active:scale-95">
+          <svg class="w-4 h-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+          <span>Apoie com Pix (joaopaulojpsp@gmail.com)</span>
+        </button>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- SCRIPT VUE 3 COMPOSITION API -->
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // Telas do aplicativo: 'menu' | 'jogo' | 'resultado'
+        const currentScreen = ref('menu');
+
+        // Operações disponíveis
+        const operations = [
+          { id: 'soma', symbol: '+', name: 'Adição' },
+          { id: 'sub', symbol: '-', name: 'Subtração' },
+          { id: 'mult', symbol: '×', name: 'Multiplicação' },
+          { id: 'div', symbol: '÷', name: 'Divisão' },
+          { id: 'misto', symbol: '★', name: 'Misto' }
+        ];
+
+        // Níveis de Dificuldade
+        const difficulties = [
+          { label: 'Fácil', questions: 25 },
+          { label: 'Médio', questions: 50 },
+          { label: 'Difícil', questions: 100 }
+        ];
+
+        // Estado das escolhas do usuário
+        const selectedOperation = ref('mult'); // Padrão: Multiplicação
+        const selectedDifficulty = ref(25);   // Padrão: 25 questões
+
+        // Validação para início
+        const isReadyToStart = computed(() => {
+          return selectedOperation.value && selectedDifficulty.value;
+        });
+
+        // Estado do Jogo
+        const currentIndex = ref(0);
+        const score = ref({ correct: 0, wrong: 0 });
+        const answered = ref(false);
+        const selectedAnswer = ref(null);
+        const currentQuestion = ref({
+          text: '',
+          correctAnswer: 0,
+          options: []
+        });
+
+        // Barra de progresso (%)
+        const progressPercentage = computed(() => {
+          return Math.round((currentIndex.value / selectedDifficulty.value) * 100);
+        });
+
+        // Cálculo do resultado final (%)
+        const percentage = computed(() => {
+          if (!selectedDifficulty.value) return 0;
+          return Math.round((score.value.correct / selectedDifficulty.value) * 100);
+        });
+
+        // Feedback motivacional na tela de resultado
+        const performanceTitle = computed(() => {
+          if (percentage.value >= 90) return 'Excelente!';
+          if (percentage.value >= 70) return 'Muito Bom!';
+          if (percentage.value >= 50) return 'Bom Trabalho!';
+          return 'Continue Praticando!';
+        });
+
+        const performanceMessage = computed(() => {
+          if (percentage.value >= 90) return 'Você domina essa tabuada perfeitamente!';
+          if (percentage.value >= 70) return 'Ótimo raciocínio, quase perfeito!';
+          if (percentage.value >= 50) return 'Você está no caminho certo, continue treinando!';
+          return 'A repetição é o segredo do sucesso. Tente novamente!';
+        });
+
+        const performanceBadgeClass = computed(() => {
+          if (percentage.value >= 70) return 'bg-amber-500/20 border border-amber-400/40 text-amber-300';
+          return 'bg-indigo-600/20 border border-indigo-500/30 text-indigo-300';
+        });
+
+        // Notificação Toast
+        const toast = ref({
+          visible: false,
+          message: '',
+          timeout: null
+        });
+
+        const showToast = (message) => {
+          if (toast.value.timeout) clearTimeout(toast.value.timeout);
+          toast.value.message = message;
+          toast.value.visible = true;
+          toast.value.timeout = setTimeout(() => {
+            toast.value.visible = false;
+          }, 3000);
+        };
+
+        // Feedback tátil / Haptic Capacitor & Web
+        const triggerHaptic = (type = 'impact') => {
+          try {
+            const Haptics = window.Capacitor?.Plugins?.Haptics;
+            if (Haptics) {
+              if (type === 'success') {
+                Haptics.notification({ type: 'SUCCESS' });
+              } else if (type === 'error') {
+                Haptics.notification({ type: 'ERROR' });
+              } else {
+                Haptics.impact({ style: 'LIGHT' });
+              }
+            } else if (navigator.vibrate) {
+              if (type === 'error') navigator.vibrate([100, 50, 100]);
+              else navigator.vibrate(40);
+            }
+          } catch (e) {
+            // Ignora se não houver suporte a vibração
+          }
+        };
+
+        // Copiar Chave Pix nativa com Capacitor Clipboard e fallback web
+        const copyPixKey = async () => {
+          const pixKey = 'joaopaulojpsp@gmail.com';
+          try {
+            if (window.Capacitor?.Plugins?.Clipboard) {
+              await window.Capacitor.Plugins.Clipboard.write({ string: pixKey });
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(pixKey);
+            } else {
+              const textArea = document.createElement('textarea');
+              textArea.value = pixKey;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+            }
+            triggerHaptic('success');
+            showToast('Chave Pix copiada com sucesso!');
+          } catch (err) {
+            showToast('Chave Pix: joaopaulojpsp@gmail.com');
+          }
+        };
+
+        const selectOp = (id) => {
+          selectedOperation.value = id;
+          triggerHaptic('impact');
+        };
+
+        const selectDiff = (q) => {
+          selectedDifficulty.value = q;
+          triggerHaptic('impact');
+        };
+
+        // Gerador de número inteiro entre min e max inclusivo
+        const getRandomInt = (min, max) => {
+          return Math.floor(Math.random() * (max - min + 1)) + min;
+        };
+
+        // Gerar uma única questão matemática
+        const generateQuestion = () => {
+          let op = selectedOperation.value;
+          if (op === 'misto') {
+            const basicOps = ['soma', 'sub', 'mult', 'div'];
+            op = basicOps[Math.floor(Math.random() * basicOps.length)];
+          }
+
+          let num1, num2, symbol, answer;
+
+          if (op === 'soma') {
+            num1 = getRandomInt(1, 10);
+            num2 = getRandomInt(1, 10);
+            symbol = '+';
+            answer = num1 + num2;
+          } else if (op === 'sub') {
+            const a = getRandomInt(1, 10);
+            const b = getRandomInt(1, 10);
+            num1 = Math.max(a, b);
+            num2 = Math.min(a, b);
+            symbol = '-';
+            answer = num1 - num2;
+          } else if (op === 'mult') {
+            num1 = getRandomInt(1, 10);
+            num2 = getRandomInt(1, 10);
+            symbol = '×';
+            answer = num1 * num2;
+          } else if (op === 'div') {
+            num2 = getRandomInt(1, 10);
+            answer = getRandomInt(1, 10);
+            num1 = num2 * answer;
+            symbol = '÷';
+          }
+
+          // Gerar 2 distratores inteligentes e plausíveis
+          const distractors = new Set();
+          while (distractors.size < 2) {
+            const offset = getRandomInt(1, 5) * (Math.random() < 0.5 ? -1 : 1);
+            let fake = answer + offset;
+            
+            if (fake < 0) fake = answer + Math.abs(offset) + 1;
+            if (fake !== answer) {
+              distractors.add(fake);
+            }
+          }
+
+          const options = [answer, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
+
+          return {
+            text: `${num1} ${symbol} ${num2} = ?`,
+            correctAnswer: answer,
+            options
+          };
+        };
+
+        // Iniciar ou reiniciar o jogo
+        const startGame = () => {
+          triggerHaptic('impact');
+          currentIndex.value = 0;
+          score.value = { correct: 0, wrong: 0 };
+          answered.value = false;
+          selectedAnswer.value = null;
+          currentQuestion.value = generateQuestion();
+          currentScreen.value = 'jogo';
+        };
+
+        // Tratar clique na opção
+        const handleAnswer = (option) => {
+          if (answered.value) return;
+
+          answered.value = true;
+          selectedAnswer.value = option;
+
+          if (option === currentQuestion.value.correctAnswer) {
+            score.value.correct++;
+            triggerHaptic('success');
+          } else {
+            score.value.wrong++;
+            triggerHaptic('error');
+          }
+
+          // Transição automática após 1 segundo
+          setTimeout(() => {
+            if (currentIndex.value + 1 < selectedDifficulty.value) {
+              currentIndex.value++;
+              currentQuestion.value = generateQuestion();
+              answered.value = false;
+              selectedAnswer.value = null;
+            } else {
+              currentScreen.value = 'resultado';
+            }
+          }, 1000);
+        };
+
+        // Estilização dinâmica dos botões de resposta
+        const getOptionClass = (option) => {
+          if (!answered.value) {
+            return 'bg-slate-800/90 border-slate-700 text-white hover:bg-slate-750 hover:border-slate-600';
+          }
+
+          if (option === currentQuestion.value.correctAnswer) {
+            return 'bg-emerald-600 border-emerald-400 text-white shadow-emerald-500/40 animate-pulse';
+          }
+
+          if (selectedAnswer.value === option && option !== currentQuestion.value.correctAnswer) {
+            return 'bg-rose-600 border-rose-400 text-white shadow-rose-500/40';
+          }
+
+          return 'bg-slate-800/50 border-slate-800 text-slate-500 opacity-50';
+        };
+
+        const confirmExit = () => {
+          if (confirm('Tem certeza que deseja sair para o menu? Seu progresso atual será perdido.')) {
+            currentScreen.value = 'menu';
+          }
+        };
+
+        // Integração com Capacitor App e Hardware Back Button do Android
+        onMounted(() => {
+          // Ajusta StatusBar
+          if (window.Capacitor?.Plugins?.StatusBar) {
+            try {
+              window.Capacitor.Plugins.StatusBar.setBackgroundColor({ color: '#0f172a' });
+            } catch (e) {}
+          }
+
+          // Trata botão Voltar nativo do Android
+          if (window.Capacitor?.Plugins?.App) {
+            try {
+              window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack }) => {
+                if (currentScreen.value === 'jogo' || currentScreen.value === 'resultado') {
+                  currentScreen.value = 'menu';
+                } else {
+                  window.Capacitor.Plugins.App.exitApp();
+                }
+              });
+            } catch (e) {}
+          }
+        });
+
+        return {
+          currentScreen,
+          operations,
+          difficulties,
+          selectedOperation,
+          selectedDifficulty,
+          isReadyToStart,
+          currentIndex,
+          score,
+          answered,
+          selectedAnswer,
+          currentQuestion,
+          progressPercentage,
+          percentage,
+          performanceTitle,
+          performanceMessage,
+          performanceBadgeClass,
+          toast,
+          selectOp,
+          selectDiff,
+          copyPixKey,
+          startGame,
+          handleAnswer,
+          getOptionClass,
+          confirmExit
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "appId": "com.techkadosh.tabuada",
+  "appName": "Tabuada TechKadosh",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f172a"
+    }
+  }
+}

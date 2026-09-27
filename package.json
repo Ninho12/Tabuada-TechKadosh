@@ -1,0 +1,33 @@
+{
+  "name": "tabuada-techkadosh",
+  "version": "1.0.0",
+  "description": "Aplicativo mobile de Tabuada e Matemática TechKadosh",
+  "scripts": {
+    "cap:add:android": "cap add android",
+    "cap:copy": "cap copy",
+    "cap:sync": "cap sync",
+    "cap:open:android": "cap open android",
+    "cap:run:android": "cap run android"
+  },
+  "keywords": [
+    "tabuada",
+    "matematica",
+    "capacitor",
+    "vue",
+    "techkadosh"
+  ],
+  "author": "TechKadosh",
+  "license": "MIT",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/clipboard": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "@capgo/cli": "^1.0.0"
+  }
+}
